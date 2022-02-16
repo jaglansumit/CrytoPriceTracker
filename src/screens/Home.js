@@ -1,8 +1,6 @@
-import React,{useEffect} from 'react';
+import React,{useEffect, useState} from 'react';
 import { SafeAreaView, StyleSheet, Text, View, Image, Dimensions} from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
-import { useState } from 'react/cjs/react.development';
-import CoinDetailModal from '../Modals/CoinDetailModal';
 import CoinItem from '../components/CoinItem';
 import axios from 'axios';
 
@@ -10,48 +8,116 @@ const {height, width} = Dimensions.get('window');
 
 const Home = () => {
     const [currencies, setCurrencies] = useState([])
+    const [count, setCount] = useState(0)
+    const [symbolArray, setSymbolArray] = useState([]);
+
+    const ws = new WebSocket('wss://stream.binance.com:9443/ws');
+    const msg = {
+      method: 'SUBSCRIBE',
+      params: symbolArray,
+      id: 1,
+    };
+    
+    ws.onopen = () => {
+      ws.send(JSON.stringify(msg));
+    };
+
+    ws.onmessage = async (e) => {
+      // a message was received
+      let d =  await JSON.parse(e.data);
+      if(d.s)
+      {
+      setData(d)
+      }
+    // setCurrencies(updatedList)    
+    
+    };
+
+   const setData = async (data) => {
+    // console.log('Result', data.c, data.s)
+
+    const promises =  await currencies.map((item) => 
+    {
+      if (item.symbol == data.s){
+        item.current_price = data.c;
+        item.percentChange = data.P
+        console.log(item);
+
+        return item;
+      }
+      return item
+    });
+      if(currencies.length)
+      {
+        setCurrencies(promises)
+      }
+
+   } 
 
     useEffect(() => {
-        _fetchCrytocoins();
+      ws.onopen = () => {
+      ws.send(JSON.stringify(msg));
+  }
+      },[symbolArray]);
+    
 
-        setInterval(async () => {
-         console.log('Interval')
-         _fetchCrytocoins();
-        },2000);
-   
+    useEffect(() => {
+      _fetchCrytocoins();
       },[]);
 
     const _fetchCrytocoins = async () => {
-        const URL = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=500&page=1&sparkline=true&price_change_percentage=7d`;
+        const URL = `https://api.binance.com/api/v3/exchangeInfo`;
         const res = await axios.get(URL);
-        console.log('Await R ------> ')
-        let data = res.data;
-        setCurrencies(data);
-      };  
+        var data = res.data.symbols;
+        let sliceData = data.slice(0,50);
+        var arr = [];
+        var currArray = [];
+        for(var i = 0; i < sliceData.length; i ++)
+        {
+          if(sliceData[i].isMarginTradingAllowed && sliceData[i].status === "TRADING")
+          {
+          var p = sliceData[i].symbol;
+          var item = {
+            "symbol" : sliceData[i].symbol,
+          }
+          var symbol = p.toLowerCase() + "@ticker";
+          console.log('Forlopp -----> ', symbol)
+          arr.push(symbol)
+          currArray.push(item)
+        }
+        }
+       
+        setSymbolArray(arr)
+        setCurrencies(currArray) 
+      };
+
 
   
     return (
         <SafeAreaView>
 
-         <Text style={{marginTop: 20, marginBottom: 20, fontSize: 24, fontWeight: '900', marginLeft: 15}}>Market</Text> 
+         <Text style={styles.header}>Market</Text> 
             <FlatList
+            style={{paddingBottom: 200}}
             data={currencies}
-            keyExtractor={item => item.id}
-            initialNumToRender={5}
-            maxToRenderPerBatch={10}
+            keyExtractor={item => item.symbol}
             renderItem={({item}) => (
-              <CoinItem id={item.id} symbol={item.symbol} price={item.current_price} logo={item.image} percentage={item.price_change_percentage_24h} />
+              <CoinItem id={item.symbol} symbol={item.symbol} price={item.current_price} logo={item.image} percentage={item.percentChange} />
             )}
             />
-            
-        <CoinDetailModal Visibility={false} />
-           
+                       
         </SafeAreaView>
     )
 }
 
 const styles = StyleSheet.create({
-    flex : 1
+    header : {
+      marginTop: 20, 
+      marginBottom: 20, 
+      fontSize: 24, 
+      fontWeight: '900', 
+      marginLeft: 15
+    }
 })
 
 export default Home;

@@ -3,14 +3,16 @@ import {View, StyleSheet, Text, Image} from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 const CoinItem = (props) => {
+
+    const percentage =  props.percentage ? Math.sign(props.percentage) : 0
     return (
         <View style={{justifyContent: 'space-between', flexDirection: 'row', marginBottom: 20}}>
 
         <View style={{flexDirection: 'row'}}>
-            <Image resizeMode="contain" source={{uri : props.logo}} style = {{width: 30, height: 30, marginLeft: 15}} />
+            <Image resizeMode="contain" source={{uri : "https://assets.coingecko.com/coins/images/1/large/bitcoin.png?1547033579"}} style = {{width: 30, height: 30, marginLeft: 15}} />
             <View style={{marginLeft: 10}}>
                 <Text>{props.id}</Text>
-                <Text>{props.symbol}</Text>
+                {/* <Text>{props.symbol}</Text> */}
             </View>
         </View>  
 
@@ -21,7 +23,7 @@ const CoinItem = (props) => {
            </View> 
 
            <View>
-               <Text style={{color: Math.sign(props.percentage) === 1 ? 'green' : 'red', fontSize: 10, textAlign: 'right'}}>{props.percentage + "%"}</Text>
+               <Text style={{color: percentage === 1 ? 'green' : 'red', fontSize: 10, textAlign: 'right'}}>{props.percentage + "%"}</Text>
            </View>
         </View>
       </View>
